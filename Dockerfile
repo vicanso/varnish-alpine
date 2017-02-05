@@ -10,7 +10,6 @@ ENV PARAMS -p default_ttl=0 -p default_grace=1800 -p default_keep=10
 
 
 ADD start.sh /start.sh
-ADD default.vcl /etc/varnish/default.vcl
 
 RUN apt-get update \
     && apt-get -y install binutils cpp cpp-5 gcc gcc-5 libasan2 \
