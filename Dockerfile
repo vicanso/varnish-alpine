@@ -15,8 +15,8 @@ ADD start.sh /start.sh
 ADD default.vcl /etc/varnish/default.vcl
 
 # See https://www.varnish-cache.org/docs/trunk/installation/install.html
-RUN apk add --no-cache pcre g++ \
-    && apk add --no-cache --virtual .build-deps autoconf automake libtool libedit-dev linux-headers make ncurses-dev pcre-dev python \
+RUN apk add --no-cache pcre g++ libedit-dev \
+    && apk add --no-cache --virtual .build-deps autoconf automake libtool linux-headers make ncurses-dev pcre-dev python \
     && wget http://repo.varnish-cache.org/source/varnish-$VERSION.tar.gz \
     && tar xf varnish-$VERSION.tar.gz \
     && cd varnish-$VERSION \
