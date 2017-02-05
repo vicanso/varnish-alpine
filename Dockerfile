@@ -1,4 +1,4 @@
-FROM ubuntu
+FROM alpine:3.4
 
 EXPOSE 80
 
@@ -8,21 +8,27 @@ ENV VCL_CONFIG      /etc/varnish/default.vcl
 ENV CACHE_SIZE      64m
 ENV PARAMS -p default_ttl=0 -p default_grace=1800 -p default_keep=10
 
+# See http://git.alpinelinux.org/cgit/aports/tree/main/varnish/musl-mode_t.patch
+ADD mode_t.patch /
 
 ADD start.sh /start.sh
 ADD default.vcl /etc/varnish/default.vcl
 
-RUN apt-get update \
-    && apt-get -y install binutils cpp cpp-5 gcc gcc-5 libasan2 \
-    libatomic1 libbsd0 libc-dev-bin libc6-dev libcc1-0 libcilkrts5 libedit2 libgcc-5-dev \
-    libgmp10 libgomp1 libisl15 libitm1 libjemalloc1 liblsan0 libmpc3 libmpfr4 libmpx0 \
-    libquadmath0 libtsan0 libubsan0 libvarnishapi1 linux-libc-dev manpages manpages-dev \
-    && apt-get -y install wget \
-    && wget https://repo.varnish-cache.org/pkg/5.0.0/varnish_5.0.0-1_amd64.deb \
-    && dpkg -i varnish_5.0.0-1_amd64.deb \
-    && rm varnish_5.0.0-1_amd64.deb \
-    && apt-get autoremove wget \
-    && apt-get clean \
+# See https://www.varnish-cache.org/docs/trunk/installation/install.html
+RUN apk add --no-cache pcre g++ \
+    && apk add --no-cache --virtual .build-deps autoconf automake libtool libedit-dev linux-headers make ncurses-dev pcre-dev python \
+    && wget http://repo.varnish-cache.org/source/varnish-$VERSION.tar.gz \
+    && tar xf varnish-$VERSION.tar.gz \
+    && cd varnish-$VERSION \
+    && ./autogen.sh \
+    && ./configure --with-rst2man=/bin/true \
+    && patch -p1 < /mode_t.patch \
+    && make \
+    && make install \
+    && cd .. \
+    && rm -r varnish-$VERSION.tar.gz varnish-$VERSION \
+    && rm /mode_t.patch \
+    && apk del .build-deps \
     && chmod +x start.sh
 
 CMD ["/start.sh"]
