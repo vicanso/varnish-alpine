@@ -20,7 +20,7 @@ RUN apt-get update \
     && wget https://repo.varnish-cache.org/pkg/5.0.0/varnish_5.0.0-1_amd64.deb \
     && dpkg -i varnish_5.0.0-1_amd64.deb \
     && rm varnish_5.0.0-1_amd64.deb \
-    && apt-get - y autoremove wget \
+    && apt-get -y autoremove wget \
     && apt-get clean \
     && chmod +x start.sh
 
