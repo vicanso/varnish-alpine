@@ -61,7 +61,6 @@ sub vcl_recv {
       set req.http.Via = "varnish-test";
     }
 
-    set req.http.startedAt = std.time2real(now, 0.0);
   }
 
 
@@ -178,7 +177,6 @@ sub vcl_deliver {
   #
   # You can do accounting or modifying the final object here.
   set resp.http.X-Hits = obj.hits;
-  set resp.http.X-Varnish-Use = now - std.real2time(std.real(req.http.startedAt, 0.0), now);
   return (deliver);
 }
 
@@ -218,9 +216,6 @@ sub vcl_synth {
 # Backend Fetch
 
 sub vcl_backend_fetch {
-  if (bereq.method == "GET") {
-    unset bereq.body;
-  }
   return (fetch);
 }
 
