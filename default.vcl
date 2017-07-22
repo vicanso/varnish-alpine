@@ -1,10 +1,10 @@
-# for varnish 5.x
+# varnish version 5
 vcl 4.0;
 import std;
 import directors;
 
 # backend start
-backend myApp0 {
+backend mybackend0 {
   .host = "127.0.0.1";
   .port = "8000";
   .connect_timeout = 2s;
@@ -27,8 +27,8 @@ backend myApp0 {
 
 # init start
 sub vcl_init {
-  new myApp = directors.round_robin();
-  myApp.add_backend(myApp0);
+  new mybackend = directors.round_robin();
+  mybackend.add_backend(mybackend0);
 }
 # init end
 
@@ -56,17 +56,17 @@ sub vcl_recv {
     }
     /* set Via */
     if (req.http.Via) {
-      set req.http.Via = req.http.Via + ", varnish-test";
+      set req.http.Via = req.http.Via + ", xieshuzhous-MacBook-Air.local";
     } else {
-      set req.http.Via = "varnish-test";
+      set req.http.Via = "xieshuzhous-MacBook-Air.local";
     }
-
+    set req.http.startedAt = std.time2real(now, 0.0);
   }
 
 
 
   /* backend selector */
-  set req.backend_hint = myApp.backend();
+  set req.backend_hint = mybackend.backend();
 
   if (req.method != "GET" &&
     req.method != "HEAD" &&
@@ -96,7 +96,7 @@ sub vcl_recv {
   }
 
   # no cache request
-  if(req.http.Cache-Control == "no-cache" || req.url ~ "\?cache=false" || req.url ~ "&cache=false"){
+  if (req.http.Cache-Control == "no-cache" || req.url ~ "cache-control=no-cache") {
     return (pass);
   }
 
@@ -128,7 +128,7 @@ sub vcl_pass {
 }
 
 
-sub vcl_hash{
+sub vcl_hash {
   hash_data(req.url);
   if (req.http.host) {
     hash_data(req.http.host);
@@ -145,7 +145,7 @@ sub vcl_purge {
 
 
 sub vcl_hit {
-  if (obj.ttl >= 0s) {
+  if (obj.ttl > 0s) {
     # A pure unadultered hit, deliver it
     return (deliver);
   }
@@ -177,6 +177,20 @@ sub vcl_deliver {
   #
   # You can do accounting or modifying the final object here.
   set resp.http.X-Hits = obj.hits;
+  set req.http.varnishUse = std.real(1000, 0.0) * std.real((now - std.real2time(std.real(req.http.startedAt, 0.0), now)), 0);
+  if (resp.http.Server-Timing) {
+    if (std.real(req.http.varnishUse, 0) > 0) {
+      set resp.http.Server-Timing = "9=" + req.http.varnishUse + {";"Varnish","} + resp.http.Server-Timing;
+    } else {
+      set resp.http.Server-Timing = {"9=0.000;"Varnish","} + resp.http.Server-Timing;
+    }
+  } else {
+    if (std.real(req.http.varnishUse, 0) > 0) {
+      set resp.http.Server-Timing = "9=" + req.http.varnishUse + {";"Varnish""};
+    } else {
+      set resp.http.Server-Timing = {"9=0.000;"Varnish""};
+    }
+  }
   return (deliver);
 }
 
@@ -191,19 +205,14 @@ sub custom_ctrl{
   if(req.url == "/varnish/version") {
     return(synth(702));
   }
-  if(req.url == "/varnish/update-history") {
-    return(synth(703));
-  }
 }
 
 
 sub vcl_synth {
-  if(resp.status == 701){
+  if (resp.status == 701) {
     synthetic("pong");
-  } elsif(resp.status == 702){
-    synthetic("2017-02-04T03:51:48.988Z");
-  } elsif(resp.status == 703){
-    synthetic("2017-02-04T03:51:48.988Z");
+  } elsif (resp.status == 702) {
+    synthetic("2017-07-22T12:44:37.679Z");
   }
   set resp.http.Cache-Control = "no-store, no-cache, must-revalidate, max-age=0";
   set resp.status = 200;
@@ -216,6 +225,11 @@ sub vcl_synth {
 # Backend Fetch
 
 sub vcl_backend_fetch {
+  
+  if (bereq.method == "GET") {
+    unset bereq.body;
+  }
+  
   return (fetch);
 }
 
