@@ -2,7 +2,7 @@ FROM alpine:edge
 
 EXPOSE 80
 
-ENV VERSION 5.1.3 
+ENV VERSION 5.2.0
 ENV PORT 80
 ENV VCL_CONFIG      /etc/varnish/default.vcl
 ENV CACHE_SIZE      128m
